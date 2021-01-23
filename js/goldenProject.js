@@ -52,11 +52,11 @@ Tunnel.prototype.init = function() {
   this.scene = new THREE.Scene();
   this.scene.fog = new THREE.Fog(0x222222, 0.6, 2.8);
 
+  this.addPC();  
 
   // Add obstacle
   this.addParticle();
 
-  this.addPC();  
 
 };
 
@@ -69,8 +69,6 @@ Tunnel.prototype.addPC = function() {
   // this.PC.position.set(0,0,1.5);
   // this.scene.add(this.PC);
 
-
-
   this.PC = new Particle(this.scene, false, 0 , true);
 };
 
@@ -80,6 +78,7 @@ Tunnel.prototype.addParticle = function() {
     for(var i = 0; i < (isMobile?4:10); i++){
       this.particles.push(new Particle(this.scene, false, 0 , false));
     }
+    this.particles.push(this.PC)
 };
 
 
@@ -278,23 +277,16 @@ Tunnel.prototype.render = function() {
  
 
   // Update the particles
+  var isPC = false;
   for(var i = 0; i < this.particles.length; i++){
-    this.particles[i].update(this);
+    isPC = (i=== 10) ? true : false;
+    this.particles[i].update(this, isPC);
     if(this.particles[i].burst && this.particles[i].percent > 1){
       this.particles.splice(i, 1);
       i--;
     }
   }
 
-  
-   // Update the PC
-   if (this.PC.position) {
-
-    // this.PC.position.x = 0.1;
-    // this.PC.position.y = -0.6;
-    // this.PC.position.z = 2.5;
-  }
-  
 
   // render the scene
   this.renderer.render(this.scene, this.camera);
@@ -336,9 +328,9 @@ function Particle(scene, burst, time, isPC = false) {
     });
     this.mesh = new THREE.Mesh(geom, mat);
     this.mesh.scale.set(radius, radius, radius);
-    if (isPC) {
-      this.mesh.position.set(0,0,0.5);
-    } else 
+    // if (isPC) {
+    //   this.mesh.position.set(0,0,0.5);
+    // } else 
       this.mesh.position.set(0,0,1.5);
     this.percent = burst ? 0.2 : Math.random();
     this.burst = burst ? true : false;
@@ -355,9 +347,9 @@ function Particle(scene, burst, time, isPC = false) {
     this.pos = new THREE.Vector3(0,0,0);
 
 
-    if (isPC) {
-      this.speed = 0;
-    }
+    // if (isPC) {
+    //   this.speed = 0;
+    // }
 
    
 
@@ -369,11 +361,20 @@ function Particle(scene, burst, time, isPC = false) {
   Particle.prototype.sphere = new THREE.SphereBufferGeometry(1, 6, 6 );
   Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1,0);
 
-  Particle.prototype.update = function (tunnel) {
+  Particle.prototype.update = function (tunnel, isPC) {
     
     this.percent += this.speed * (this.burst?2:1);
-    
-    this.pos = tunnel.curve.getPoint(1 - (this.percent%1)) .add(this.offset);
+    if (isPC) {
+      this.pos = tunnel.curve.getPoint(1 - (0.75));
+      this.pos.z = 0.4
+    } else 
+      this.pos = tunnel.curve.getPoint(1 - (this.percent%1)) .add(this.offset);
+      /**
+       * this.offset -> changes particles from center ; remove offset and particles remain at center of screen
+       * this.percent gives movement towards camera; give 0.75 instead of this.percent%1 to have static particles
+       */
+
+      // this.pos = tunnel.curve.getPoint(1 - 0.75) .add(this.offset);
     this.mesh.position.x = this.pos.x;
     this.mesh.position.y = this.pos.y;
     this.mesh.position.z = this.pos.z;
