@@ -6,6 +6,7 @@ var isMobile = ww < 500;
 // Save half window dimension
 var ww2 = ww * 0.5, wh2 = wh * 0.5;
 
+
 // Constructor function
 function Tunnel() {
   // Init the scene and the
@@ -19,6 +20,8 @@ function Tunnel() {
   // Start loop animation
   window.requestAnimationFrame(this.render.bind(this));
 }
+
+
 
 Tunnel.prototype.init = function() {
   // Define the speed of the tunnel
@@ -43,23 +46,42 @@ Tunnel.prototype.init = function() {
   // Create a camera and move it along Z axis
   this.camera = new THREE.PerspectiveCamera(15, ww / wh, 0.01, 1000);
   this.camera.position.z = 0.35;
-//   this.camera.position.y = -0.02; // To see the actual shape of tunnel
+  // this.camera.position.y = -3; // To see the actual shape of tunnel
 
   // Create an empty scene and define a fog for it
   this.scene = new THREE.Scene();
   this.scene.fog = new THREE.Fog(0x222222, 0.6, 2.8);
 
-  // Add obstacle
 
+  // Add obstacle
   this.addParticle();
+
+  this.addPC();  
+
 };
+
+
+Tunnel.prototype.addPC = function() {
+  // this.PC = 
+  // var geometry = new THREE.BoxGeometry(0.1,0.1,2);
+  // var material = new THREE.MeshStandardMaterial({color: 0xff0000});
+  // this.PC = new THREE.Mesh(geometry, material);
+  // this.PC.position.set(0,0,1.5);
+  // this.scene.add(this.PC);
+
+
+
+  this.PC = new Particle(this.scene, false, 0 , true);
+};
+
 
 Tunnel.prototype.addParticle = function() {
     this.particles = [];
     for(var i = 0; i < (isMobile?4:10); i++){
-      this.particles.push(new Particle(this.scene));
+      this.particles.push(new Particle(this.scene, false, 0 , false));
     }
 };
+
 
 Tunnel.prototype.createMesh = function() {
   // Empty array to store the points along the path
@@ -72,12 +94,10 @@ Tunnel.prototype.createMesh = function() {
   // Set custom Y position for the last point
   points[4].y = -0.06;
 
-  
   /**To End game
    * points[4].y = 0; // downward curd is straightened up
    */
   
-
   // Create a curve based on the points
   this.curve = new THREE.CatmullRomCurve3(points);
   // Define the curve type
@@ -125,6 +145,8 @@ this.scene.add( directionalLight );
   this.tubeGeometry_o = this.tubeGeometry.clone();
 };
 
+
+
 Tunnel.prototype.handleEvents = function() {
   // When user resize window
   window.addEventListener("resize", this.onResize.bind(this), false);
@@ -134,8 +156,6 @@ Tunnel.prototype.handleEvents = function() {
 //     this.onMouseMove.bind(this),
 //     false
 //   );
-
-
 
     document.body.addEventListener("keydown", (event)=> {
         console.log(event);
@@ -156,6 +176,8 @@ Tunnel.prototype.handleEvents = function() {
 
     })
 };
+
+
 
 Tunnel.prototype.onResize = function() {
   // On resize, get new width & height of window
@@ -178,6 +200,8 @@ Tunnel.prototype.onResize = function() {
 //   this.mouse.target.y = (wh2 - e.clientY) / wh2;
 // };
 
+
+
 Tunnel.prototype.updateCameraPosition = function() {
   // Update the mouse position with some lerp
   this.mouse.position.x += (this.mouse.target.x - this.mouse.position.x) / 30;
@@ -191,6 +215,9 @@ Tunnel.prototype.updateCameraPosition = function() {
   this.camera.position.y = -this.mouse.position.y * 0.015;
 };
 
+
+
+
 /**Method to move tunnel to make it look like PC is moving */
 
 Tunnel.prototype.updateMaterialOffset = function(x1, y1) {
@@ -200,6 +227,8 @@ Tunnel.prototype.updateMaterialOffset = function(x1, y1) {
   this.tubeMaterial.map.offset.x += x1;
   this.tubeMaterial.map.offset.y += y1;
 };
+
+
 
 Tunnel.prototype.updateCurve = function() {
   var index = 0, vertice_o = null, vertice = null;
@@ -233,6 +262,9 @@ Tunnel.prototype.updateCurve = function() {
   this.splineMesh.geometry.vertices = this.curve.getPoints(70);
 };
 
+
+
+
 Tunnel.prototype.render = function() {
   // Update material offset
 //   this.updateMaterialOffset();
@@ -243,6 +275,9 @@ Tunnel.prototype.render = function() {
   // Update the tunnel
   this.updateCurve();
 
+ 
+
+  // Update the particles
   for(var i = 0; i < this.particles.length; i++){
     this.particles[i].update(this);
     if(this.particles[i].burst && this.particles[i].percent > 1){
@@ -250,6 +285,16 @@ Tunnel.prototype.render = function() {
       i--;
     }
   }
+
+  
+   // Update the PC
+   if (this.PC.position) {
+
+    // this.PC.position.x = 0.1;
+    // this.PC.position.y = -0.6;
+    // this.PC.position.z = 2.5;
+  }
+  
 
   // render the scene
   this.renderer.render(this.scene, this.camera);
@@ -259,15 +304,19 @@ Tunnel.prototype.render = function() {
 };
 
 
-function Particle(scene, burst, time) {
+
+function Particle(scene, burst, time, isPC = false) {
     var radius = Math.random()*0.002 + 0.0003;
     var geom = this.icosahedron;
     var random = Math.random();
-    if(random > 0.9){
-      geom = this.cube;
-    } else if(random > 0.8){
-      geom = this.sphere;
-    }
+    // if(random > 0.9){
+    //   geom = this.cube;
+    // } else if(random > 0.8){
+    //   geom = this.sphere;
+    // }
+
+    
+
     var range = 50;
     if(burst){
       this.color = new THREE.Color("hsl("+(time / 50)+",100%,60%)");
@@ -275,13 +324,22 @@ function Particle(scene, burst, time) {
       var offset = 180;
       this.color = new THREE.Color("hsl("+(Math.random()*range+offset)+",100%,80%)");
     }
+
+    if (isPC) {
+      geom = this.cube;
+      this.color = new THREE.Color("hsl(0, 50%, 50%)"); // red colour
+    }
+
     var mat = new THREE.MeshPhongMaterial({
       color: this.color,
       shading:THREE.FlatShading
     });
     this.mesh = new THREE.Mesh(geom, mat);
     this.mesh.scale.set(radius, radius, radius);
-    this.mesh.position.set(0,0,1.5);
+    if (isPC) {
+      this.mesh.position.set(0,0,0.5);
+    } else 
+      this.mesh.position.set(0,0,1.5);
     this.percent = burst ? 0.2 : Math.random();
     this.burst = burst ? true : false;
     this.offset = new THREE.Vector3((Math.random()-0.5)*0.025, (Math.random()-0.5)*0.025, 0);
@@ -295,12 +353,22 @@ function Particle(scene, burst, time) {
     this.rotate = new THREE.Vector3(-Math.random()*0.1+0.01,0,Math.random()*0.01);
     
     this.pos = new THREE.Vector3(0,0,0);
+
+
+    if (isPC) {
+      this.speed = 0;
+    }
+
+   
+
+
     scene.add(this.mesh);
   }
   
   Particle.prototype.cube = new THREE.BoxBufferGeometry(1, 1, 1);
   Particle.prototype.sphere = new THREE.SphereBufferGeometry(1, 6, 6 );
   Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1,0);
+
   Particle.prototype.update = function (tunnel) {
     
     this.percent += this.speed * (this.burst?2:1);
@@ -314,6 +382,8 @@ function Particle(scene, burst, time) {
     this.mesh.rotation.z += this.rotate.z;
   };
 
+
+
 // All needed textures
 var textures = {
   "stone": {
@@ -323,6 +393,7 @@ var textures = {
     url: "img/demo1/stonePatternBump.jpg"
   }
 };
+
 // Create a new loader
 var loader = new THREE.TextureLoader();
 // Prevent crossorigin issue
@@ -336,7 +407,9 @@ for (var name in textures) {
   });
 })(name)
 }
+
 var texturesLoaded = 0;
+
 function checkTextures() {
   texturesLoaded++;
   if (texturesLoaded === Object.keys(textures).length) {
