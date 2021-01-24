@@ -158,20 +158,32 @@ Tunnel.prototype.handleEvents = function() {
 
     document.body.addEventListener("keydown", (event)=> {
         console.log(event);
-       
+        if (event.key == "w") {
+          this.updateMaterialOffset(0.05,0)
+        }
+
+        if (event.key == "s") {
+            this.updateMaterialOffset(-0.05,0)
+        }
         if (event.key == "ArrowUp") {
-            this.updateMaterialOffset(0.05,0)
+           this.PC.pcPosition.y = this.PC.pcPosition.y + (0.1)*0.025;
         }
 
         if (event.key == "ArrowDown") {
-            this.updateMaterialOffset(-0.05,0)
+           this.PC.pcPosition.y = this.PC.pcPosition.y - (0.1)*0.025;
         }
         if (event.key == "ArrowLeft") {
-            this.updateMaterialOffset(0,-0.02)
+          console.log("left");
+            // this.updateMaterialOffset(0,-0.02)
+            this.PC.pcPosition.x = this.PC.pcPosition.x + (0.1)*0.025;
         }
         if (event.key == "ArrowRight") {
-            this.updateMaterialOffset(0,0.02)
+            // this.updateMaterialOffset(0,0.02)
+            this.PC.pcPosition.x = this.PC.pcPosition.x - (0.1)*0.025;
         }
+        this.PC.offset = new THREE.Vector3(this.PC.pcPosition.x, this.PC.pcPosition.y, 0);
+        console.log("left");
+
 
     })
 };
@@ -307,6 +319,14 @@ function Particle(scene, burst, time, isPC = false) {
     //   geom = this.sphere;
     // }
 
+    if (isPC) {
+      this.pcPosition = {
+        x:0,
+        y:0,
+        z:0
+      }
+    }
+
     
 
     var range = 50;
@@ -332,42 +352,45 @@ function Particle(scene, burst, time, isPC = false) {
     //   this.mesh.position.set(0,0,0.5);
     // } else 
       this.mesh.position.set(0,0,1.5);
+
     this.percent = burst ? 0.2 : Math.random();
     this.burst = burst ? true : false;
-    this.offset = new THREE.Vector3((Math.random()-0.5)*0.025, (Math.random()-0.5)*0.025, 0);
-    this.speed = Math.random()*0.004 + 0.0002;
+
+    if (isPC) {
+      // x,y values range : [-0.5*0.025, 0.5*0.025]
+      this.offset = new THREE.Vector3(this.pcPosition.x, this.pcPosition.y, 0);
+      this.speed = Math.random()*0.004 + 0.0002;
+      this.rotate = new THREE.Vector3(-Math.random()*0.1+0.01,0,Math.random()*0.01);  
+    } else {
+      this.offset = new THREE.Vector3((Math.random()-0.5)*0.025, (Math.random()-0.5)*0.025, 0);
+      this.speed = Math.random()*0.004 + 0.0002;
+      this.rotate = new THREE.Vector3(-Math.random()*0.1+0.01,0,Math.random()*0.01);  
+    }
+
     if (this.burst){
       this.speed += 0.003;
       this.mesh.scale.x *= 1.4;
       this.mesh.scale.y *= 1.4;
       this.mesh.scale.z *= 1.4;
     }
-    this.rotate = new THREE.Vector3(-Math.random()*0.1+0.01,0,Math.random()*0.01);
     
     this.pos = new THREE.Vector3(0,0,0);
-
-
-    // if (isPC) {
-    //   this.speed = 0;
-    // }
-
-   
-
 
     scene.add(this.mesh);
   }
   
-  Particle.prototype.cube = new THREE.BoxBufferGeometry(1, 1, 1);
+  Particle.prototype.cube = new THREE.BoxBufferGeometry(0.7, 0.7, 0.7);
   Particle.prototype.sphere = new THREE.SphereBufferGeometry(1, 6, 6 );
   Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1,0);
 
+
   Particle.prototype.update = function (tunnel, isPC) {
-    
-    this.percent += this.speed * (this.burst?2:1);
     if (isPC) {
-      this.pos = tunnel.curve.getPoint(1 - (0.75));
-      this.pos.z = 0.4
-    } else 
+      this.percent = 0.85
+    } else {
+      this.percent += this.speed * (this.burst?2:1);
+    }
+
       this.pos = tunnel.curve.getPoint(1 - (this.percent%1)) .add(this.offset);
       /**
        * this.offset -> changes particles from center ; remove offset and particles remain at center of screen
