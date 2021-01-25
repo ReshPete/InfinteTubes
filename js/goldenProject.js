@@ -339,7 +339,7 @@ Tunnel.prototype.render = function() {
 
 
     /**Measure PC distance and health to show Success/Failure message */
-    if (this.PC.player.distance > 100) {
+    if (this.PC.player.distance >= 100) {
       gameState = "win";
     }
     if (this.PC.player.health < 0) {
