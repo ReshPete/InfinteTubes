@@ -97,6 +97,10 @@ a:focus {
 	align-items: center;
 	width: 100%;
 	padding: 2em;
+	/*Changes for Win,Lose, Restart Messages*/
+	flex-direction: column;
+	justify-content: flex-end;
+	height: 50%;
 }
 
 .codrops-header__title {
@@ -106,17 +110,29 @@ a:focus {
 	padding: 0;
 }
 
-.codrops-header__tagline {
+/* .codrops-header__tagline {
 	margin: 1em 0 0.5em;
 	width: 100%;
-}
+	text-align: center;
+} */
 
 .codrops-header__info {
-	margin: 0;
+	margin: 1em;
 	font-weight: bold;
 }
 
-/* Top Navigation Style */
+.in-game-header {
+	position: absolute;
+	display: flex;
+	flex-direction: row-reverse;
+	flex-wrap: wrap;
+	align-items: center;
+	width: 100%;
+	padding: 2em;
+	justify-content: flex-start;
+}
+
+/* Top Navigation Style
 .codrops-links {
 	position: relative;
 	display: flex;
@@ -144,7 +160,8 @@ a:focus {
 	display: inline-block;
 	padding: 0 0.5em;
 	border: none;
-}
+} */
+
 
 /* Demo links */
 .demos {
@@ -208,6 +225,11 @@ a:focus {
 	.codrops-header {
 		flex-direction: column;
 		align-items: flex-start;
+		font-size: 0.85em;
+	}
+	.in-game-header {
+		flex-direction: column;
+		align-items: flex-end;
 		font-size: 0.85em;
 	}
 	.codrops-links {
