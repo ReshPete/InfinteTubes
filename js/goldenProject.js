@@ -17,6 +17,17 @@ healthElt.innerText = "HEALTH: 100";
 var scoreElt = document.getElementById("score");
 scoreElt.innerText = "SCORE: 0";
 
+var NPCpos = {
+  x: 0,
+  y: 0,
+  z: 0
+} 
+var PCpos = {
+  x: 0,
+  y: 0,
+  z: 0
+} 
+
 // Constructor function
 function Tunnel() {
   // Init the scene and the
@@ -100,8 +111,8 @@ Tunnel.prototype.createMesh = function() {
    * (0, 0, 0), (0, 0, 0.625), (0, 0, 1.25), (0, 0, 1.875), (0, 0, 2.5)
    */
   // Set custom X and Y position for the last point
-  points[4].x = -0.04;
-  points[4].y = 0.04;
+  points[4].x = -0.05;
+  points[4].y = 0.05;
 
   /**To End game
    * points[4].y = 0; // downward curd could be straightened up
@@ -210,8 +221,9 @@ Tunnel.prototype.handleEvents = function() {
          */
         this.PC.player.x = (this.PC.player.x > (0.5)*0.025) ? (0.5)*0.025 : this.PC.player.x;
         this.PC.player.x = (this.PC.player.x < -(0.5)*0.025) ? -(0.5)*0.025 : this.PC.player.x;
-        this.PC.player.y = (this.PC.player.y > (0.4)*0.025) ? (0.4)*0.025 : this.PC.player.y;
-        this.PC.player.y = (this.PC.player.y < -(0.4)*0.025) ? -(0.4)*0.025 : this.PC.player.y;
+        this.PC.player.y = (this.PC.player.y > (0.3)*0.025) ? (0.3)*0.025 : this.PC.player.y;
+        this.PC.player.y = (this.PC.player.y < -(0.3)*0.025) ? -(0.3)*0.025 : this.PC.player.y;
+        
         this.PC.offset = new THREE.Vector3(this.PC.player.x, this.PC.player.y, 0);
 
     })
@@ -317,6 +329,11 @@ Tunnel.prototype.render = function() {
     this.updateCurve();
 
     // Update the particles
+    PCpos = {
+      x: Math.round(this.PC.pos.x * 100),
+      y: Math.round(this.PC.pos.y * 100),
+      z: Math.round(this.PC.pos.z * 100)
+    }
     
     for(var i = 0; i < this.NPCparticles.length; i++){
       /**The last item in NPCparticles array is the PC */
@@ -324,7 +341,22 @@ Tunnel.prototype.render = function() {
         /**2nd argument is true only for PC */
         this.NPCparticles[i].update(this, true);
       } else {
+        /**For NPC particles */
         this.NPCparticles[i].update(this, false);
+        /**Check if NPC is colliding with PC */
+        /**Compare particle.pos values for PC and NPCs */
+        NPCpos = {
+          x: Math.round(this.NPCparticles[i].pos.x * 100),
+          y: Math.round(this.NPCparticles[i].pos.y * 100),
+          z: Math.round(this.NPCparticles[i].pos.z * 100)
+        }
+
+        if (PCpos.x == NPCpos.x && 
+            PCpos.y == NPCpos.y && 
+            PCpos.z == NPCpos.z ) {
+              console.log("HIT !!");
+              this.PC.player.health = this.PC.player.health-10  ;
+        }
       }
 
       if(this.NPCparticles[i].burst && this.NPCparticles[i].percent > 1){
@@ -332,21 +364,23 @@ Tunnel.prototype.render = function() {
         i--;
       }
     }
+
     
-    /**Update score and health */
-    healthElt.innerText = "HEALTH: " + this.PC.player.health;
-    scoreElt.innerText = "SCORE: "+ this.PC.player.distance;
 
 
+    
+   
     /**Measure PC distance and health to show Success/Failure message */
     if (this.PC.player.distance >= 100) {
       gameState = "win";
-    }
-    if (this.PC.player.health < 0) {
+    } else if (this.PC.player.health < 0) {
       gameState = "lose";
     }
 
-
+     /**Update score and health */
+     healthElt.innerText = "HEALTH: " + this.PC.player.health;
+     scoreElt.innerText = "SCORE: "+ this.PC.player.distance;
+  
     // render the scene
     this.renderer.render(this.scene, this.camera);
 
@@ -395,10 +429,11 @@ function Particle(scene, burst, time, isPC = false) {
     var range = 50;
     if(burst){
       this.color = new THREE.Color("hsl("+(time / 50)+",100%,60%)");
-    } else if (isPC) {
+    } 
+    if (isPC) {
       /**PC particle will have cube geometry and red colour */
       geom = this.cube;
-      this.color = new THREE.Color("hsl(0, 50%, 50%)"); // red colour
+      this.color = new THREE.Color("hsl(0, 50%, 50%)"); // red colour for PC
     } else {
       var offset = 180;
       this.color = new THREE.Color("hsl("+(Math.random()*range+offset)+",100%,80%)");
@@ -438,14 +473,15 @@ function Particle(scene, burst, time, isPC = false) {
     scene.add(this.mesh);
   }
   
-  Particle.prototype.cube = new THREE.BoxBufferGeometry(0.7, 0.7, 0.7);
-  Particle.prototype.sphere = new THREE.SphereBufferGeometry(1, 6, 6 );
-  Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1,0);
+  Particle.prototype.cube = new THREE.BoxBufferGeometry(1, 1, 1);
+  Particle.prototype.sphere = new THREE.SphereBufferGeometry(2, 6, 6 );
+  Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(2,0);
 
 
   Particle.prototype.update = function (tunnel, isPC=false) {
     if (isPC) {
-      this.percent = 0.825;
+      /**To change the PC's distance from camera */
+      this.percent = 0.835;
     } else {
       this.percent += this.speed * (this.burst?2:1);
     }
