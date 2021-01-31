@@ -84,7 +84,7 @@ Tunnel.prototype.init = function() {
 
 
 Tunnel.prototype.addPC = function() {
-  this.PC = new Particle(this.scene, false, 0 , true);
+  this.PC = new Particle(this.scene, false, 0 , "pc");
 };
 
 
@@ -92,10 +92,9 @@ Tunnel.prototype.addParticleNPC = function() {
     this.NPCparticles = [];
 
     for(var i = 0; i < (isMobile?10:20); i++){
-      this.NPCparticles.push(new Particle(this.scene, false, 0 , false));
+      this.NPCparticles.push(new Particle(this.scene, false, 0 , "npc"));
     }
-
-    this.NPCparticles.push(this.PC);
+   // this.NPCparticles.push(this.PC);
 };
 
 
@@ -195,13 +194,17 @@ Tunnel.prototype.handleEvents = function() {
           this.updateMaterialOffset(0.05,0);
           /**Increasing the distance moved by PC */
           this.PC.player.distance += 1;
+          /**Updte the ring only when we move forward */
+          if (this.finishRing != undefined) {
+            this.finishRing.update(this, "ring");
+          }
         }
 
-        if (event.key == "s" || event.key == "S") {
-            this.updateMaterialOffset(-0.05,0);
-            /**Decreasing the distance moved by PC */
-          this.PC.player.distance -= 1;
-        }
+        // if (event.key == "s" || event.key == "S") {
+        //     this.updateMaterialOffset(-0.05,0);
+        //     /**Decreasing the distance moved by PC */
+        //   this.PC.player.distance -= 1;
+        // }
         if (event.key == "ArrowUp") {
            this.PC.player.y = this.PC.player.y + (0.05)*0.025;
         }
@@ -319,7 +322,7 @@ Tunnel.prototype.updateCurve = function() {
 Tunnel.prototype.render = function() {
   if (gameState === "play") {
     
-    // Update material offset; only if we want the forward movement by default
+    /**Update material offset; only if we want the forward movement by default */
     // this.updateMaterialOffset();
 
     // Update camera position & rotation
@@ -328,52 +331,53 @@ Tunnel.prototype.render = function() {
     // Update the tunnel
     this.updateCurve();
 
-    // Update the particles
+    /**Round pos values to first 2 decimal places */
     PCpos = {
-      x: Math.round(this.PC.pos.x * 100),
-      y: Math.round(this.PC.pos.y * 100),
-      z: Math.round(this.PC.pos.z * 100)
+      x: Math.round(this.PC.pos.x * 125),
+      y: Math.round(this.PC.pos.y * 125),
+      z: Math.round(this.PC.pos.z * 125)
     }
     
-    for(var i = 0; i < this.NPCparticles.length; i++){
-      /**The last item in NPCparticles array is the PC */
-      if (i=== (this.NPCparticles.length-1)) {
-        /**2nd argument is true only for PC */
-        this.NPCparticles[i].update(this, true);
-      } else {
-        /**For NPC particles */
-        this.NPCparticles[i].update(this, false);
-        /**Check if NPC is colliding with PC */
-        /**Compare particle.pos values for PC and NPCs */
-        NPCpos = {
-          x: Math.round(this.NPCparticles[i].pos.x * 100),
-          y: Math.round(this.NPCparticles[i].pos.y * 100),
-          z: Math.round(this.NPCparticles[i].pos.z * 100)
-        }
-
-        if (PCpos.x == NPCpos.x && 
-            PCpos.y == NPCpos.y && 
-            PCpos.z == NPCpos.z ) {
-              console.log("HIT !!");
-              this.PC.player.health = this.PC.player.health-10  ;
-        }
+    /**Update the particles */
+    for(var i = 0; i < this.NPCparticles.length; i++) {
+      
+      this.NPCparticles[i].update(this, "npc");
+      /**Check if NPC is colliding with PC
+       * Compare particle.pos values for PC and NPCs
+       */
+      NPCpos = {
+        x: Math.round(this.NPCparticles[i].pos.x * 125),
+        y: Math.round(this.NPCparticles[i].pos.y * 125),
+        z: Math.round(this.NPCparticles[i].pos.z * 125)
       }
 
-      if(this.NPCparticles[i].burst && this.NPCparticles[i].percent > 1){
+      if ((PCpos.x == NPCpos.x) && (PCpos.y == NPCpos.y) && (PCpos.z == NPCpos.z) ) {
+            
+        this.PC.player.health = this.PC.player.health-10  ;
+        /**Remove hit particles */
+        this.NPCparticles[i].percent = 1.1;
+        this.NPCparticles[i].update(this, "npc", "npcCollided");
         this.NPCparticles.splice(i, 1);
         i--;
-      }
+      } 
+  
+      // if(this.NPCparticles[i].burst && this.NPCparticles[i].percent > 1){
+      //   this.NPCparticles.splice(i, 1);
+      //   i--;
+      // }
     }
 
-    
-
-
-    
+    if (this.PC != undefined) {
+      this.PC.update(this, "pc");
+    }
    
+    if ((this.PC.player.distance > 100) && (this.finishRing == undefined)) {
+      this.finishRing = new Particle(this.scene, false, 0 , "ring");
+    }
     /**Measure PC distance and health to show Success/Failure message */
-    if (this.PC.player.distance >= 100) {
+    if (this.finishRing && this.finishRing.percent > 0.85) {
       gameState = "win";
-    } else if (this.PC.player.health < 0) {
+    } else if (this.PC.player.health <= 0) {
       gameState = "lose";
     }
 
@@ -399,8 +403,7 @@ Tunnel.prototype.render = function() {
 
 
 
-function Particle(scene, burst, time, isPC = false) {
-    var radius = Math.random()*0.002 + 0.0003;
+function Particle(scene, burst, time, particleType = "npc") {
     var geom = this.sphere;
     /**Only if we want the obstales to have different geometries */
     // var random = Math.random();
@@ -410,7 +413,7 @@ function Particle(scene, burst, time, isPC = false) {
     //   geom = this.icosahedron;
     // }
 
-    if (isPC) {
+    if (particleType == "pc") {
       /**
        * player object: exists only for PC Particle
        * x,y,z will be the position points of PC
@@ -430,10 +433,14 @@ function Particle(scene, burst, time, isPC = false) {
     if(burst){
       this.color = new THREE.Color("hsl("+(time / 50)+",100%,60%)");
     } 
-    if (isPC) {
+    if (particleType == "pc") {
       /**PC particle will have cube geometry and red colour */
       geom = this.cube;
       this.color = new THREE.Color("hsl(0, 50%, 50%)"); // red colour for PC
+    } else if (particleType == "ring") {
+      /**PC particle will have cube geometry and red colour */
+      geom = this.ring;
+      this.color = new THREE.Color("hsl(50, 50%, 80%)"); // yellow colour for PC
     } else {
       var offset = 180;
       this.color = new THREE.Color("hsl("+(Math.random()*range+offset)+",100%,80%)");
@@ -446,20 +453,32 @@ function Particle(scene, burst, time, isPC = false) {
       shading:THREE.FlatShading
     });
     this.mesh = new THREE.Mesh(geom, mat);
+
+    var radius = (particleType=="npc" ) ? (Math.random()*0.002 + 0.0003) : (0.0023);
     this.mesh.scale.set(radius, radius, radius);
     this.mesh.position.set(0,0,1.5);
 
-    this.percent = burst ? 0.2 : Math.random();
+    // this.percent = burst ? 0.2 : ((particleType == "npc") ? Math.random() : 0.5);
+    this.percent = burst ? 0.2 :  0.5;
     this.burst = burst ? true : false;
 
-    if (isPC) {
+    if (particleType == "pc") {
       /* x,y values range : [-0.5*0.025, 0.5*0.025] */
       this.offset = new THREE.Vector3(this.player.x, this.player.y, 0);  
+    } else if (particleType == "ring") {
+      this.offset = new THREE.Vector3(0, 0, 0);
     } else {
       this.offset = new THREE.Vector3((Math.random()-0.5)*0.025, (Math.random()-0.5)*0.025, 0);
     }
-    this.speed = Math.random()*0.004 + 0.0002;
-    this.rotate = new THREE.Vector3(-Math.random()*0.1+0.01,0,Math.random()*0.01);
+
+    if (particleType == "ring" ) {
+      this.rotate = new THREE.Vector3(0,0,0);
+      this.speed = (0.5)*0.004 + 0.0002;
+    } else {
+      this.rotate = new THREE.Vector3(-Math.random()*0.1+0.01,0,Math.random()*0.01);
+      this.speed = Math.random()*0.004 + 0.0002;
+
+    }
 
     if (this.burst){
       this.speed += 0.003;
@@ -473,15 +492,19 @@ function Particle(scene, burst, time, isPC = false) {
     scene.add(this.mesh);
   }
   
-  Particle.prototype.cube = new THREE.BoxBufferGeometry(1, 1, 1);
-  Particle.prototype.sphere = new THREE.SphereBufferGeometry(2, 6, 6 );
-  Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(2,0);
+  Particle.prototype.cube = new THREE.BoxBufferGeometry(1.2, 1.2, 1.2);
+  Particle.prototype.sphere = new THREE.SphereBufferGeometry(1.5, 6, 6 );
+  Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1.5,0);
+  Particle.prototype.diamond = new THREE.TetrahedronGeometry( 3, 0 )
+  Particle.prototype.ring = new THREE.TorusGeometry( 6, 2, 16, 100 )
 
 
-  Particle.prototype.update = function (tunnel, isPC=false) {
-    if (isPC) {
+  Particle.prototype.update = function (tunnel, particleType = "npc", action = "normal") {
+    if (particleType == "pc") {
       /**To change the PC's distance from camera */
-      this.percent = 0.835;
+      this.percent = 0.83;
+    } else if (action == "npcCollided"){
+      this.percent = 1.1;
     } else {
       this.percent += this.speed * (this.burst?2:1);
     }
