@@ -511,7 +511,7 @@ function Particle(scene, burst, time, particleType = "npc") {
       });
       mat.map.wrapS = THREE.RepeatWrapping;
       mat.map.wrapT = THREE.RepeatWrapping;
-      mat.map.repeat.set(2,2);
+      mat.map.repeat.set(1,1);
     
     } else if (particleType == "diamond"){
       mat = new THREE.MeshPhysicalMaterial({
@@ -619,6 +619,9 @@ var textures = {
   },
   "bluePattern": {
     url: "img/demo1/bluePattern.jpg"
+  },
+  "robot": {
+    url: "img/demo1/robot.png"
   }
 };
 
