@@ -1,7 +1,7 @@
-# Infinite Tubes Game with Three.JS
+# Tunnelscape - Escape the tunnel 3D
 
 Checkout the small 3D game here:
-https://reshpete.github.io/InfinteTubes/
+https://reshpete.github.io/Tunnelscape/
 
 Instructions: Use the arrow keys to move out of the way of obstacles!
 
