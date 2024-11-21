@@ -5,6 +5,12 @@ https://reshpete.github.io/Tunnelscape/
 
 Instructions: Use the arrow keys to move out of the way of obstacles!
 
+Next steps:
+1. Move forward towards the goal
+2. Add gems and collect points
+3. Change health-bar colors based on remaining health.
+4. Separate health and score bars
+
 ## Credits
 - Tunnel experiment in WebGL with three.js by https://github.com/Mamboleoo and https://github.com/crnacura
 - [Official Three.js website](https://threejs.org/)
