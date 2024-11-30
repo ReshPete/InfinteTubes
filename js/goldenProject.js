@@ -7,7 +7,7 @@ var isMobile = ww < 500;
 var ww2 = ww * 0.5, wh2 = wh * 0.5;
 
 /**For Success Failure Display */
-var gameState = "play";
+var gameState = "start";
 var winElt = document.getElementsByClassName("win")[0];
 winElt.style.display = "none";
 var loseElt = document.getElementsByClassName("lose")[0];
@@ -17,6 +17,9 @@ healthElt.value = 100;
 var pseudoProgressElt = document.getElementsByTagName("body")[0];
 var scoreElt = document.getElementById("score");
 scoreElt.innerText = "SCORE: 0";
+
+var startScreenElt = document.getElementsByClassName("start-screen")[0];
+
 
 var NPCpos = {
   x: 0,
@@ -175,31 +178,36 @@ Tunnel.prototype.createMesh = function() {
 Tunnel.prototype.handleEvents = function() {
   // When user resize window
   window.addEventListener("resize", this.onResize.bind(this), false);
+  
   // When user move the mouse
-//   document.body.addEventListener(
-//     "mousemove",
-//     this.onMouseMove.bind(this),
-//     false
-//   );
+  //   document.body.addEventListener(
+  //     "mousemove",
+  //     this.onMouseMove.bind(this),
+  //     false
+  //   );
 
     document.body.addEventListener("keydown", (event)=> {
 
         /**
-         * W key: Move forward
-         * S key: Move back
+         * "W" key: Move forward
+         * // "S" key: Move back
          * Up Arrow: Move Up
          * Down Arrow: Move Down
          * Left Arrow: Move Left
          * Right Arrow: Move Right
          */
         if (event.key == "w" || event.key == "W") {
-          this.updateMaterialOffset(0.05,0);
-          /**Increasing the distance moved by PC */
-          this.PC.player.distance += 1;
-          this.PC.player.score += 1;
-          /**Updte the ring only when we move forward */
-          if (this.finishRing != undefined) {
-            this.finishRing.update(this, "ring");
+
+          /**Move forward or back only when gameState is "play" */
+          if (gameState === "play") {
+            this.updateMaterialOffset(0.05,0);
+            /**Increasing the distance moved by PC */
+            this.PC.player.distance += 1;
+            this.PC.player.score += 1;
+            /**Updte the ring only when we move forward */
+            if (this.finishRing != undefined) {
+              this.finishRing.update(this, "ring");
+            }
           }
         }
 
@@ -275,9 +283,7 @@ Tunnel.prototype.updateCameraPosition = function() {
 
 
 
-
 /**Method to move tunnel to make it look like PC is moving */
-
 Tunnel.prototype.updateMaterialOffset = function(x1, y1) {
   // Update the offset of the material
 //   this.tubeMaterial.map.offset.x += this.speed;
@@ -323,7 +329,31 @@ Tunnel.prototype.updateCurve = function() {
 
 
 Tunnel.prototype.render = function() {
-  if (gameState === "play") {
+  /**In the start screen, show basic game frame */
+  if (gameState === "start") {
+     // Update camera position & rotation
+     this.updateCameraPosition();
+
+     this.updateCurve();
+
+    //  PCpos = {
+    //   x: Math.round(this.PC.pos.x * 125),
+    //   y: Math.round(this.PC.pos.y * 125),
+    //   z: Math.round(this.PC.pos.z * 125)
+    // }
+
+    if (this.PC != undefined) {
+      this.PC.update(this, "pc");
+    }
+
+    // render the scene
+    this.renderer.render(this.scene, this.camera);
+
+    // Animation loop
+    window.requestAnimationFrame(this.render.bind(this));
+   
+
+  } else if (gameState === "play") {
     
     /**Update material offset; only if we want the forward movement by default */
     // this.updateMaterialOffset();
@@ -331,7 +361,8 @@ Tunnel.prototype.render = function() {
     // Update camera position & rotation
     this.updateCameraPosition();
 
-    // Update the tunnel
+    // Update the tunnel 
+    // - Check what this does?
     this.updateCurve();
 
     /**Round pos values to first 2 decimal places */
@@ -374,7 +405,7 @@ Tunnel.prototype.render = function() {
       this.PC.update(this, "pc");
     }
    
-    if ((this.PC.player.distance > 100) && (this.diamondParticles.length == 0)) {
+    if ((this.PC.player.distance > (70 + Math.random()*200)) && (this.diamondParticles.length == 0)) {
       this.diamondParticles.push(new Particle(this.scene, false, 0 , "diamond"));
       setTimeout(()=> {
         this.diamondParticles.push(new Particle(this.scene, false, 0 , "diamond"));
@@ -572,40 +603,40 @@ function Particle(scene, burst, time, particleType = "npc") {
     this.pos = new THREE.Vector3(0,0,0);
 
     scene.add(this.mesh);
+}
+
+Particle.prototype.cube = new THREE.BoxBufferGeometry(1.2, 1.2, 1.2);
+Particle.prototype.sphere = new THREE.SphereBufferGeometry(1.2, 15, 15 );
+Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1.5,0);
+Particle.prototype.diamond = new THREE.OctahedronGeometry( 1.5, 0 )
+Particle.prototype.ring = new THREE.TorusGeometry( 6, 2, 8, 30 )
+
+
+Particle.prototype.update = function (tunnel, particleType = "npc", action = "normal") {
+  if (particleType == "pc") {
+    /**To change the PC's distance from camera */
+    this.percent = 0.83;
+  } else if (action == "collided"){
+    this.percent = 1.1;
+  } else {
+    this.percent += this.speed * (this.burst?2:1);
   }
+
+  /**
+   * this.offset : moves particles away from center ; remove offset and particles remain at center of screen
+   * this.percent : gives movement towards camera; give 0.75 instead of this.percent to have static particles
+   */
+  this.pos = tunnel.curve.getPoint(1 - (this.percent%1)) .add(this.offset);
   
-  Particle.prototype.cube = new THREE.BoxBufferGeometry(1.2, 1.2, 1.2);
-  Particle.prototype.sphere = new THREE.SphereBufferGeometry(1.2, 15, 15 );
-  Particle.prototype.icosahedron = new THREE.IcosahedronBufferGeometry(1.5,0);
-  Particle.prototype.diamond = new THREE.OctahedronGeometry( 1.5, 0 )
-  Particle.prototype.ring = new THREE.TorusGeometry( 6, 2, 8, 30 )
-
-
-  Particle.prototype.update = function (tunnel, particleType = "npc", action = "normal") {
-    if (particleType == "pc") {
-      /**To change the PC's distance from camera */
-      this.percent = 0.83;
-    } else if (action == "collided"){
-      this.percent = 1.1;
-    } else {
-      this.percent += this.speed * (this.burst?2:1);
-    }
-
-    /**
-     * this.offset : moves particles away from center ; remove offset and particles remain at center of screen
-     * this.percent : gives movement towards camera; give 0.75 instead of this.percent to have static particles
-     */
-    this.pos = tunnel.curve.getPoint(1 - (this.percent%1)) .add(this.offset);
-    
-    /**To keep updating the position of all Particles */
-    this.mesh.position.x = this.pos.x;
-    this.mesh.position.y = this.pos.y;
-    this.mesh.position.z = this.pos.z;
-    /**To keep updating the rotation of all Particles */
-    this.mesh.rotation.x += this.rotate.x;
-    this.mesh.rotation.y += this.rotate.y;
-    this.mesh.rotation.z += this.rotate.z;
-  };
+  /**To keep updating the position of all Particles */
+  this.mesh.position.x = this.pos.x;
+  this.mesh.position.y = this.pos.y;
+  this.mesh.position.z = this.pos.z;
+  /**To keep updating the rotation of all Particles */
+  this.mesh.rotation.x += this.rotate.x;
+  this.mesh.rotation.y += this.rotate.y;
+  this.mesh.rotation.z += this.rotate.z;
+};
 
 
 
@@ -629,6 +660,7 @@ var textures = {
 var loader = new THREE.TextureLoader();
 // Prevent crossorigin issue
 loader.crossOrigin = "Anonymous";
+
 // Load all textures
 for (var name in textures) {
   (function(name) {
@@ -650,6 +682,12 @@ function checkTextures() {
   }
 }
 
+/**Start game */
+function startGame() {
+  gameState = "play";
+  startScreenElt.style.display = "none";
+  console.log("startGame() was clicked and reached")
+}
 
 /**Restart game */
 function restartGame() {
