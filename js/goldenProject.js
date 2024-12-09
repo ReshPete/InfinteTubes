@@ -361,8 +361,7 @@ Tunnel.prototype.render = function() {
     // Update camera position & rotation
     this.updateCameraPosition();
 
-    // Update the tunnel 
-    // - Check what this does?
+    // Update the tunnel - needs further checking as to what this does exactly
     this.updateCurve();
 
     /**Round pos values to first 2 decimal places */
@@ -686,7 +685,6 @@ function checkTextures() {
 function startGame() {
   gameState = "play";
   startScreenElt.style.display = "none";
-  console.log("startGame() was clicked and reached")
 }
 
 /**Restart game */
